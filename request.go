@@ -4,42 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"net/http"
 )
 
 type Request struct {
-	body   JsonMap
-	header map[string][]string
-}
-
-func newRequest(r *http.Request) (*Request, error) {
-	var request = new(Request)
-	var err error
-	var b []byte
-	var body JsonMap
-
-	b, err = io.ReadAll(r.Body)
-	if err == nil && len(b) > 0 {
-		err = json.Unmarshal(b, &body)
-	}
-	request.body = body
-	request.header = r.Header
-	return request, err
-
-}
-
-func (r Request) Header(h string) []string {
-	return r.header[h]
-}
-
-func (r Request) Body(path string) any {
-	var res any
-
-	res = r.body.Get(path)
-	if _, ok := res.(error); ok {
-		return nil
-	}
-	return res
+	Status int
+	Body   JsonMap
 }
 
 func (r *Request) ToByteSlice() ([]byte, error) {

@@ -1,87 +1,68 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 )
 
-func (e Error) Send(w http.ResponseWriter) {
+func sendResponse(w http.ResponseWriter, msg string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(e.status)
-	fmt.Fprintln(w, e.ToString())
+	w.WriteHeader(code)
+	fmt.Fprintln(w, msg)
 }
 
-func (e Error) Log() {
-	log.Println(e.Message())
+func apiError(w http.ResponseWriter, statusCode int, errStr string) {
+	err := Error(statusCode, errStr)
+	sendResponse(w, err.Error(), statusCode)
 }
 
-func (e Error) SendAndLog(w http.ResponseWriter) {
-	e.Log()
-	e.Send(w)
+func ApiError(w http.ResponseWriter, statusCode int, errStr string) {
+	apiError(w, statusCode, errStr)
 }
 
-func apiError(statusCode int, errStr string) Error {
-	var err Error
-
-	err = NewError(statusCode, errStr).(Error)
-	return err
+func ServerFault(w http.ResponseWriter, err string) {
+	var errStr = "internal server error"
+	apiError(w, http.StatusInternalServerError, errStr)
 }
 
-func appendErrMsg(start string, chunks []string) string {
-	var chunk string
-	var i, l int
-
-	if l = len(chunks) - 1; l >= 0 {
-		start += ": "
-	}
-	for i, chunk = range chunks {
-		start += chunk
-		if i < l {
-			start += ", "
-		}
-	}
-	return start
-}
-
-func ApiError(statusCode int, errStr string) Error {
-	return apiError(statusCode, errStr)
-}
-
-func ServerFault(msgs ...string) Error {
-	var err = "internal server error"
-
-	err = appendErrMsg(err, msgs)
-	return apiError(http.StatusInternalServerError, err)
-}
-
-func Forbidden(msgs ...string) Error {
+func Forbidden(w http.ResponseWriter) {
 	var err = "forbidden"
-	err = appendErrMsg(err, msgs)
-	return apiError(http.StatusForbidden, err)
+	defer apiError(w, http.StatusForbidden, err)
 }
 
-func BadRequest(msgs ...string) Error {
+func BadRequest(w http.ResponseWriter) {
 	var err = "bad request"
-	err = appendErrMsg(err, msgs)
-	return apiError(http.StatusBadRequest, err)
+	apiError(w, http.StatusBadRequest, err)
 }
 
-func Unauthorized(msgs ...string) Error {
+func Unauthorized(w http.ResponseWriter) {
 	var err = "unuthorized"
-	err = appendErrMsg(err, msgs)
-	return apiError(http.StatusUnauthorized, err)
+	apiError(w, http.StatusUnauthorized, err)
 }
 
-func NotFound(msgs ...string) Error {
+func NotFound(w http.ResponseWriter) {
 	var err = "not found"
-	err = appendErrMsg(err, msgs)
-	return apiError(http.StatusNotFound, err)
+	apiError(w, http.StatusNotFound, err)
 }
 
-func NotAllowed(msgs ...string) Error {
+func NotAllowed(w http.ResponseWriter) {
 	var err = "method not allowed"
-	err = appendErrMsg(err, msgs)
-	return apiError(http.StatusMethodNotAllowed, err)
+	apiError(w, http.StatusMethodNotAllowed, err)
+}
+
+func Error(status int, msg string) error {
+	var err error
+	var body string
+	var response = &Response{}
+
+	response.Status = status
+	response.Body = JsonMap{"msg": msg}
+	if body, err = response.ToString(); err != nil {
+		log.Println(err.Error())
+	}
+
+	return errors.New(body)
 }

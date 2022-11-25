@@ -1,7 +1,8 @@
 package api
 
 import (
-	"fmt"
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 )
@@ -9,23 +10,35 @@ import (
 type Server struct {
 	responseWriter http.ResponseWriter
 	request        *http.Request
-	Request        *Request
 }
 
 func NewServer(w http.ResponseWriter, r *http.Request) Server {
-	var srv Server
-	var err error
-
-	srv.responseWriter = w
-	srv.request = r
-	if srv.Request, err = newRequest(r); err != nil {
-		srv.ServerFault(err.Error())
-	}
-	return srv
+	return Server{w, r}
 }
 
-func (s Server) Responder() http.ResponseWriter {
-	return s.responseWriter
+func (s Server) Body() (JsonMap, error) {
+	var err error
+	var data JsonMap
+	var b []byte
+
+	b, err = io.ReadAll(s.request.Body)
+	if err != nil {
+		return data, err
+	}
+	err = json.Unmarshal(b, &data)
+	return data, err
+}
+
+func (s Server) UnmarshalBody(v any) error {
+	var err error
+	var b []byte
+
+	b, err = io.ReadAll(s.request.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(b, v)
+	return err
 }
 
 func (s *Server) VerifyUA(accept []string) bool {
@@ -39,78 +52,33 @@ func (s *Server) VerifyUA(accept []string) bool {
 	return false
 }
 
-func (s Server) responedParseResp(response []any) (string, map[string]string) {
-	var msg string
-	var headers map[string]string
-
-	for _, r := range response {
-		switch t := r.(type) {
-		case string:
-			msg = t
-		case map[string]string:
-			headers = t
-		default:
-			panic("only string for message and map[string]string for headers allowed")
-		}
-	}
-	return msg, headers
-}
-
-func (s Server) Forbidden(response ...any) {
-	var msg string
-	var headers map[string]string
-
-	msg, headers = s.responedParseResp(response)
-	s.Error(http.StatusForbidden, msg, headers)
-}
-
-func (s Server) ServerFault(response ...any) {
-	var msg string
-	var headers map[string]string
-
-	msg, headers = s.responedParseResp(response)
-	s.Error(http.StatusInternalServerError, msg, headers)
-}
-
-func (s Server) BadRequest(response ...any) {
-	var msg string
-	var headers map[string]string
-
-	msg, headers = s.responedParseResp(response)
-	s.Error(http.StatusBadRequest, msg, headers)
-}
-
-func (s Server) NotAllowed(response ...any) {
-	var msg string
-	var headers map[string]string
-
-	msg, headers = s.responedParseResp(response)
-	s.Error(http.StatusMethodNotAllowed, msg, headers)
-}
-
-func (s Server) Error(status int, msg string, headers ...map[string]string) {
-	if len(headers) > 0 {
-		s.Responed(status, msg, headers[0])
-	} else {
-		s.Responed(status, msg)
-	}
-
+func (s Server) Forbidden() {
+	Forbidden(s.responseWriter)
 	log.Println(s.request)
 }
 
-func (s Server) Responed(status int, msg string, headers ...map[string]string) {
-	var w = s.responseWriter
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	if len(headers) > 0 {
-		for _, m := range headers {
-			for h, v := range m {
-				w.Header().Set(h, v)
-			}
-		}
-	}
-	w.WriteHeader(status)
-	fmt.Fprintln(w, msg)
+func (s Server) ServerFault(err error) {
+	ServerFault(s.responseWriter, err.Error())
+	log.Println(s.request)
+}
+
+func (s Server) BadRequest() {
+	BadRequest(s.responseWriter)
+	log.Println(s.request)
+}
+
+func (s Server) NotAllowed() {
+	NotAllowed(s.responseWriter)
+	log.Println(s.request)
+}
+
+func (s Server) Error(status int, msg string) {
+	apiError(s.responseWriter, status, msg)
+	log.Println(s.request)
+}
+
+func (s Server) Responed(status int, msg string) {
+	sendResponse(s.responseWriter, msg, status)
 }
 
 func (s Server) Method() string {

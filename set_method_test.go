@@ -42,7 +42,7 @@ func TestSetJMParam_SetArrVlue(t *testing.T) {
 		if err != nil {
 			t.Error(err.Error())
 		}
-		got = jm.Get(tt.key)
+		got, err = jm.Get(tt.key)
 		if got != tt.replace {
 			t.Errorf("jm[%v] = %v, want: %v", tt.key, got, tt.replace)
 		}
@@ -88,7 +88,7 @@ func TestSetJMParam_SetMapVlue(t *testing.T) {
 		if err != nil {
 			t.Error(err.Error())
 		}
-		got = jm.Get(tt.key)
+		got, err = jm.Get(tt.key)
 		if got != tt.replace {
 			t.Errorf("jm[%v] = %v, want: %v", tt.key, got, tt.replace)
 		}
@@ -151,7 +151,7 @@ func TestSetJMParam(t *testing.T) {
 		if err != nil {
 			t.Error(err.Error())
 		}
-		got = jm.Get(tt.key)
+		got, err = jm.Get(tt.key)
 		if got != tt.replace {
 			t.Errorf("jm[%v] = %v, want: %v", tt.key, got, tt.replace)
 		}

@@ -1,14 +1,50 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"strings"
 )
 
-type ApiBody interface {
+type IApiBody interface {
 	ToByteSlice() []byte
 	ToString() string
 	ToReader() io.Reader
+}
+
+type ApiBody struct {
+	status int
+	body   JsonMap
+}
+
+func (r ApiBody) ToByteSlice() ([]byte, error) {
+	var err error
+	var res []byte
+
+	res, err = json.Marshal(r)
+	return res, err
+}
+
+func (r ApiBody) ToString() (string, error) {
+	var err error
+	var res []byte
+
+	res, err = r.ToByteSlice()
+	return string(res), err
+}
+
+func (r ApiBody) ToReader() (io.Reader, error) {
+	var err error
+	var tmp []byte
+	var res io.Reader
+
+	tmp, err = r.ToByteSlice()
+	if err != nil {
+		return res, err
+	}
+	res = bytes.NewReader(tmp)
+	return res, nil
 }
 
 func splitPath(path string) (string, string) {

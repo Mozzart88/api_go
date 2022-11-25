@@ -27,27 +27,27 @@ func (jm *JsonMap) ToString() (string, error) {
 	return string(res), err
 }
 
-// func (jm JsonMap) ToApiBody() (*ApiBody, error) {
-// 	var err error
-// 	var res *ApiBody
-// 	var status any
-// 	var body any
+func (jm JsonMap) ToApiBody() (*ApiBody, error) {
+	var err error
+	var res *ApiBody
+	var status any
+	var body any
 
-// 	if len(jm.Keys()) != 2 {
-// 		return res, errors.New("only 2 zero-depth keys are avaliable")
-// 	}
-// 	if status, err = jm.Get("status"); err != nil {
-// 		return res, errors.New("status key is requiered")
-// 	}
-// 	if body, err = jm.Get("body"); err != nil {
-// 		return res, errors.New("body key is requiered")
-// 	}
-// 	res = &ApiBody{
-// 		status: status.(int),
-// 		body:   body.(JsonMap),
-// 	}
-// 	return res, err
-// }
+	if len(jm.Keys()) != 2 {
+		return res, errors.New("only 2 zero-depth keys are avaliable")
+	}
+	if status, err = jm.Get("status"); err != nil {
+		return res, errors.New("status key is requiered")
+	}
+	if body, err = jm.Get("body"); err != nil {
+		return res, errors.New("body key is requiered")
+	}
+	res = &ApiBody{
+		status: status.(int),
+		body:   body.(JsonMap),
+	}
+	return res, err
+}
 
 func (jm JsonMap) ToReader() (io.Reader, error) {
 	var err error
@@ -71,27 +71,25 @@ func (jm JsonMap) Keys() []string {
 	return keys
 }
 
-func getValue(jm any, key any) any {
+func getValue(jm any, key any) (any, error) {
 	var err error
+	var val any
 
-	switch t := jm.(type) {
+	switch jm.(type) {
 	case []any:
 		if key, err = strconv.Atoi(key.(string)); err != nil {
-			return err
+			return val, err
 		}
-		jm = t
+		jm = (jm.([]any))[key.(int)]
 	case map[string]any:
-		jm = t
+		jm = (jm.(map[string]any))[key.(string)]
 	default:
-		jm = t
+		jm = (jm.(JsonMap))[key.(string)]
 	}
-	return jm
+	return jm, err
 }
 
-/*
-May return error - need to check if returned value is error
-*/
-func (jm JsonMap) Get(path string) any {
+func (jm JsonMap) Get(path string) (any, error) {
 	const sep string = "."
 	var err error
 	var val any
@@ -102,16 +100,16 @@ func (jm JsonMap) Get(path string) any {
 	keys = strings.Split(path, sep)
 	tmp = jm
 	for _, key = range keys {
-		tmp = getValue(tmp, key)
+		tmp, err = getValue(tmp, key)
+		if err != nil {
+			return val, err
+		}
 		if tmp == nil {
 			break
 		}
-		if _, ok := tmp.(error); ok {
-			return err
-		}
 	}
 	val = tmp
-	return val
+	return val, err
 }
 
 func setByIndex(sl []any, index string, value any) error {
@@ -132,23 +130,18 @@ func setByKey(sl map[string]any, index string, value any) error {
 	return err
 }
 
-/*
-TODO: If as value parameter passed stringified json
-we need to parse it and set values as json value and
-not as string
-*/
-func (jm *JsonMap) Set(path string, value any) error {
+func (jm JsonMap) Set(path string, value any) error {
 	var err error
 	var tmp any
 	var key string
 
 	path, key = splitPath(path)
 	if len(path) == 0 {
-		(*jm)[key] = value
+		jm[key] = value
 	} else {
-		tmp = jm.Get(path)
-		if e, ok := tmp.(error); ok {
-			return e
+		tmp, err = jm.Get(path)
+		if err != nil {
+			return err
 		}
 		if tmp == nil {
 			return errors.New("invalid index")
@@ -163,7 +156,7 @@ func (jm *JsonMap) Set(path string, value any) error {
 				return err
 			}
 		default:
-			(*jm)[path] = value
+			jm[path] = value
 		}
 	}
 

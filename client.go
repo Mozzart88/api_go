@@ -1,15 +1,15 @@
 package api
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 )
 
 type IApi interface {
 	Request(method string, data io.Reader) error
-	Body() (Response, error)
-	CallApi(method string, data Request) (Response, error)
+	Body() (ApiBody, error)
+	CallApi(method string, data Request) (IApiBody, error)
 }
 
 type Client struct {
@@ -24,31 +24,19 @@ func NewClient(url string, apiVersion string) *Client {
 	return &Client{url: url, apiVersion: apiVersion}
 }
 
-func (c Client) Url(url ...string) string {
-	if len(url) > 0 {
-		c.url = url[0]
-	}
+func (c Client) Url() string {
 	return c.url
 }
 
-func (c Client) Secret(sec ...string) string {
-	if len(sec) > 0 {
-		c.secret = sec[0]
-	}
+func (c Client) Secret() string {
 	return c.secret
 }
 
-func (c Client) UA(ua ...string) string {
-	if len(ua) > 0 {
-		c.userAgent = ua[0]
-	}
+func (c Client) UA() string {
 	return c.userAgent
 }
 
-func (c Client) Version(v ...string) string {
-	if len(v) > 0 {
-		c.apiVersion = v[0]
-	}
+func (c Client) Version() string {
 	return c.apiVersion
 }
 
@@ -56,15 +44,13 @@ func (c Client) HttpResponse() *http.Response {
 	return c.response
 }
 
-func (c Client) Call(method string, path string, data io.Reader) (*http.Response, error) {
+func (c *Client) Call(method string, data io.Reader) error {
 	var err error
 	var request *http.Request
-	var url string
 
-	url = strings.Join([]string{c.url, path}, "/")
-	request, err = http.NewRequest(method, url, data)
+	request, err = http.NewRequest(method, c.url, data)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(c.userAgent) > 0 {
 		request.Header.Set("User-Agent", c.userAgent)
@@ -72,19 +58,43 @@ func (c Client) Call(method string, path string, data io.Reader) (*http.Response
 	if len(c.secret) > 0 {
 		request.Header.Set("X-Secret", c.secret)
 	}
-	return http.DefaultClient.Do(request)
+	c.response, err = http.DefaultClient.Do(request)
+	return err
 }
 
-func (c Client) makeCall(method string, path string, data io.Reader) (*http.Response, error) {
-	return c.Call(method, path, data)
-}
-
-func (c Client) CallApi(method string, path string, data JsonMap) (*http.Response, error) {
+func (c *Client) makeCall(method string, data io.Reader) (ApiBody, error) {
 	var err error
+	var res ApiBody
+
+	err = c.Call(method, data)
+	if err != nil {
+		return res, err
+	}
+	res, err = c.Body()
+	if err != nil {
+		return res, err
+	}
+	return res, err
+}
+
+func (c *Client) CallApi(method string, data Request) (ApiBody, error) {
+	var err error
+	var res ApiBody
 	var reader io.Reader
 
 	if reader, err = data.ToReader(); err != nil {
-		return nil, err
+		return res, err
 	}
-	return c.makeCall(method, path, reader)
+	res, err = c.makeCall(method, reader)
+	return res, err
+}
+
+func (c Client) Body() (ApiBody, error) {
+	var data ApiBody
+	var err error
+	var dec *json.Decoder
+
+	dec = json.NewDecoder(c.response.Body)
+	err = dec.Decode(&data)
+	return data, err
 }

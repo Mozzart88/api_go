@@ -54,7 +54,7 @@ func TestGetJMParam(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if got = jm.Get(tt.path); got != tt.want {
+		if got, err = jm.Get(tt.path); got != tt.want {
 			t.Errorf("GetJMParam(%v) = %v, want %v", tt.path, got, tt.want)
 		}
 		if err != nil {
@@ -105,7 +105,7 @@ func TestGetJMParam_GetArray(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got = jm.Get("arr")
+		got, err = jm.Get("arr")
 		if err != nil {
 			t.Error(err.Error())
 		}
@@ -147,7 +147,7 @@ func TestGetJMParam_ReplaceVlue(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got = jm.Get("arr")
+		got, err = jm.Get("arr")
 		(got.([]interface{}))[tt.index] = tt.replace
 		if err != nil {
 			t.Error(err.Error())
@@ -190,7 +190,7 @@ func TestGetJMParam_TypeAssertion(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got = jm.Get("obj")
+		got, err = jm.Get("obj")
 		(got.(map[string]interface{}))[tt.index] = tt.replace
 		if err != nil {
 			t.Error(err.Error())

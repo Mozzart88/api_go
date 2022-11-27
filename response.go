@@ -16,9 +16,8 @@ type Response struct {
 func NewResponse(res *http.Response) Response {
 	var err error
 	var r Response
-	var decoder *json.Decoder
+	var decoder = json.NewDecoder(res.Body)
 
-	decoder = json.NewDecoder(res.Body)
 	if err = decoder.Decode(&r); err != nil {
 		log.Panic(err)
 	}

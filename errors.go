@@ -23,9 +23,7 @@ func (e Error) SendAndLog(w http.ResponseWriter) {
 }
 
 func apiError(statusCode int, errStr string) Error {
-	var err Error
-
-	err = NewError(statusCode, errStr).(Error)
+	var err Error = NewError(statusCode, errStr).(Error)
 	return err
 }
 

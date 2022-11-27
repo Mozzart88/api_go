@@ -59,9 +59,8 @@ func (c Client) HttpResponse() *http.Response {
 func (c Client) Call(method string, path string, data io.Reader) (*http.Response, error) {
 	var err error
 	var request *http.Request
-	var url string
+	var url string = strings.Join([]string{c.url, path}, "/")
 
-	url = strings.Join([]string{c.url, path}, "/")
 	request, err = http.NewRequest(method, url, data)
 	if err != nil {
 		return nil, err

@@ -57,9 +57,11 @@ func getValue(jm any, key any) any {
 		if key, err = strconv.Atoi(key.(string)); err != nil {
 			return err
 		}
-		jm = t
+		jm = t[key.(int)]
 	case map[string]any:
-		jm = t
+		jm = t[key.(string)]
+	case JsonMap:
+		jm = t[key.(string)]
 	default:
 		jm = t
 	}

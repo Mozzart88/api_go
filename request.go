@@ -35,9 +35,9 @@ func (r Request) Header(h string) []string {
 func (r Request) Body(path string) any {
 	var res any
 
-	if len(path) == 0 {
-		return r.body
-	}
+	// if len(path) == 0 {
+	// 	return r.body
+	// }
 	res = r.body.Get(path)
 	if _, ok := res.(error); ok {
 		return nil

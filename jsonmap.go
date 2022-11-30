@@ -27,28 +27,6 @@ func (jm *JsonMap) ToString() (string, error) {
 	return string(res), err
 }
 
-// func (jm JsonMap) ToApiBody() (*ApiBody, error) {
-// 	var err error
-// 	var res *ApiBody
-// 	var status any
-// 	var body any
-
-// 	if len(jm.Keys()) != 2 {
-// 		return res, errors.New("only 2 zero-depth keys are avaliable")
-// 	}
-// 	if status, err = jm.Get("status"); err != nil {
-// 		return res, errors.New("status key is requiered")
-// 	}
-// 	if body, err = jm.Get("body"); err != nil {
-// 		return res, errors.New("body key is requiered")
-// 	}
-// 	res = &ApiBody{
-// 		status: status.(int),
-// 		body:   body.(JsonMap),
-// 	}
-// 	return res, err
-// }
-
 func (jm JsonMap) ToReader() (io.Reader, error) {
 	var err error
 	var tmp []byte
@@ -65,7 +43,7 @@ func (jm JsonMap) ToReader() (io.Reader, error) {
 func (jm JsonMap) Keys() []string {
 	var keys []string
 
-	for k, _ := range jm {
+	for k := range jm {
 		keys = append(keys, k)
 	}
 	return keys
@@ -79,9 +57,11 @@ func getValue(jm any, key any) any {
 		if key, err = strconv.Atoi(key.(string)); err != nil {
 			return err
 		}
-		jm = t
+		jm = t[key.(int)]
 	case map[string]any:
-		jm = t
+		jm = t[key.(string)]
+	case JsonMap:
+		jm = t[key.(string)]
 	default:
 		jm = t
 	}

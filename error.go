@@ -28,9 +28,7 @@ func (e Error) Error() string {
 }
 
 func (e Error) ToByteSlice() []byte {
-	var res []byte
-
-	res = []byte(e.ToString())
+	var res = []byte(e.ToString())
 	return res
 }
 

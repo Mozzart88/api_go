@@ -12,12 +12,11 @@ type ApiBody interface {
 }
 
 func splitPath(path string) (string, string) {
+	const sep string = "."
 	var begin string
 	var end string
-	var sep string = "."
-	var keys []string
+	var keys []string = strings.Split(path, sep)
 
-	keys = strings.Split(path, sep)
 	if len(keys) == 1 {
 		return begin, path
 	}

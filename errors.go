@@ -83,3 +83,15 @@ func NotAllowed(msgs ...string) Error {
 	err = appendErrMsg(err, msgs)
 	return apiError(http.StatusMethodNotAllowed, err)
 }
+
+func NotImplemented(msgs ...string) Error {
+	var err = "not implemented"
+	err = appendErrMsg(err, msgs)
+	return apiError(http.StatusNotImplemented, err)
+}
+
+func ErrRange(msgs ...string) Error {
+	var err = "requested range not satisfiable"
+	err = appendErrMsg(err, msgs)
+	return apiError(http.StatusRequestedRangeNotSatisfiable, err)
+}
